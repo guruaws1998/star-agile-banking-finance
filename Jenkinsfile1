@@ -1,42 +1,53 @@
-pipeline{
+pipeline {
     agent any
-    stages{
-        stage('checkout the code from github'){
-            steps{
-                 git url: 'https://github.com/akshu20791/Banking-java-project/'
-                 echo 'github url checkout'
+
+    stages {
+        stage('Checkout Code from GitHub') {
+            steps {
+                git url: 'https://github.com/guruaws1998/star-agile-banking-finance.git'
+                echo 'GitHub URL checked out'
             }
         }
-        stage('codecompile with akshat'){
-            steps{
-                echo 'starting compiling'
+        stage('Compile Code') {
+            steps {
+                echo 'Starting compilation'
                 sh 'mvn compile'
             }
         }
-        stage('codetesting with akshat'){
-            steps{
+        stage('Run Tests') {
+            steps {
                 sh 'mvn test'
             }
         }
-        stage('qa with akshat'){
-            steps{
+        stage('QA Check') {
+            steps {
                 sh 'mvn checkstyle:checkstyle'
             }
         }
-        stage('package with akshat'){
-            steps{
+        stage('Package') {
+            steps {
                 sh 'mvn package'
             }
         }
-        stage('run dockerfile'){
-          steps{
-               sh 'docker build -t myimg .'
-           }
-         }
-        stage('port expose'){
-            steps{
-                sh 'docker run -dt -p 8091:8091 --name c000 myimg'
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t gurumahesh1998/financeimg:v1 .'
+                sh 'docker run -itd -p 8083:8081 gurumahesh1998/financeimg:v1'
             }
-        }   
+        }
+        stage(' Login to docker hub and push the file') {
+            steps {
+               withCredentials([string(credentialsId: 'dockerhubpass', variable: 'dockerhubpass')]) {
+               sh 'docker login -u gurumahesh1998 -p ${dockerhubpass}'
+               sh 'docker push gurumahesh1998/financeimg:v1'
+                } 
+                
+            }
+        }
+        stage('deployment stage using ansible') {
+            steps {
+                ansiblePlaybook become: true, credentialsId: 'ansible', disableHostKeyChecking: true, installation: 'ansible', inventory: '/etc/ansible/hosts', playbook: 'ansible-playbook.yml', sudoUser: null, vaultTmpPath: ''
+            }
+        }
     }
 }
